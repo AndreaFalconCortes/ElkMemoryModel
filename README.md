@@ -11,7 +11,7 @@ This program code is the example code with that we obtained the results (for Mod
 
 --- In repository ---
 
-In this repository besides this readme.txt there are one executable R code.
+In this repository, besides this readme.txt ,there is one executable R code.
 
 --- Step by step ---
 
