@@ -123,6 +123,7 @@ xv = matrix(0,np,2) #matrix to save the patches' euclidean coordinates whitin a 
 xv [,1] <- runif(length(xv[,1]), 0, 10) #random X coordinate
 xv [,2] <- runif (length(xv[,2]), 0, 10)#random Y coordinate 
 z = vector('numeric',nsteps) #vector to save the "animal" trajectory
+u = vector('numeric', nsteps) #vector to save the number of uvs at time t
 
 rnd = sample (1:np,1)
 z[1] = rnd #random initial position
@@ -147,35 +148,51 @@ q <- 0.2 # q -> parameter that defines the memory use frequency
 co <- plogis(lambda*log(areas)+ka) #logit probability increase with area
 
 for (i in 2:length(z)){ #simulate trajectory
+  
+  ds <- sqrt ( (xv[z[i-1],1] - xv[,1])^2 + (xv[z[i-1],2] - xv[,2])^2 ); #distance from the actual position z[i-1] to the other patches  
+  
+  xs[z[i-1]] <- xs[z[i-1]] + 1 #number of visits to the patch z[i-1]
+  
+  m <- xs/(i-1) #probability of revisit a patch (number of visits/time)
+  d <- exp(-(ds/a)^b) #exponential probability decay with distance
+  
+  rnd <- runif(1,0,1) #choose the probability to use or not memory
+  if (rnd < q){
+    k <- (d*co*m)/(sum(d*co*m)) #use memory and revisit a patch cosidering distance, area, and reinforcement 
+  }
+  else{
+    k <- (d*co)/(sum(d*co)) #don't use memory and choose a patch considering distance and area
+  }
+  
+  j <- sample (idx, size = 1, replace = TRUE, prob = k) #choose a patch with probability k
+  
+  z[i] <- j #save the step
+  
+}
 
-    ds <- sqrt ( (xv[z[i-1],1] - xv[,1])^2 + (xv[z[i-1],2] - xv[,2])^2 ); #distance from the actual position z[i-1] to the other patches  
-
-    xs[z[i-1]] <- xs[z[i-1]] + 1 #number of visits to the patch z[i-1]
-    
-    m <- xs/(i-1) #probability of revisit a patch (number of visits/time)
-    d <- exp(-(ds/a)^b) #exponential probability decay with distance
-    
-    rnd <- runif(1,0,1) #choose the probability to use or not memory
-    if (rnd < q){
-        k <- (d*co*m)/(sum(d*co*m)) #use memory and revisit a patch cosidering distance, area, and reinforcement 
-    }
-    else{
-        k <- (d*co)/(sum(d*co)) #don't use memory and choose a patch considering distance and area
-    }
-
-    j <- sample (idx, size = 1, replace = TRUE, prob = k) #choose a patch with probability k
-    
-    z[i] <- j #save the step
-    
+for(j in 1:length(z)){
+  u[j] = length(unique(z[1:j])) # number of uvs until time j
 }
 
 data.sim <- list(np = np, 
-                      nsteps = nsteps,
-                      areas = areas,
-                      xv = xv,
-                      z = z) #necesary data to perform the bayesian fit
-                      
+                 nsteps = nsteps,
+                 areas = areas,
+                 xv = xv,
+                 z = z) #necessary data to perform the bayesian fit
+
+data <- list(np = np, 
+             nsteps = nsteps,
+             areas = areas,
+             xv = xv,
+             z = z,
+             u = u) #data to perform PPC
+
 fit <- stan(file = 'ProbPatchMem.stan', data = data.sim,
             iter = 500, chains = 3, control = list(adapt_delta = 0.9)) #call the model to perform the bayes fit
 
 print(fit) #show the fit
+posterior <- as.array(fit) #convert object fit to array
+
+fitpos = list (fit, posterior) #save in a list fit and posterior
+save(fitpos, file = "fitposM_Ex.RData") #save in RDATA file
+save(data, file = "data_Ex.RData") #save the data for compute PPC
