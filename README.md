@@ -18,4 +18,4 @@ In this repository, besides this readme.txt ,there is one executable R code.
 (1) Install rstan library
 (2) Execute the code ExampleFit_Mii.R to obtain the posterior distributions
 (3) Execute the code PPC_Ex.R to obtain the PPC test
-(4) Execute the code WAIC_Ec.R to obtain the WAIC 
+(4) Execute the code WAIC_Ex.R to obtain the WAIC 
